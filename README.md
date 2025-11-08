@@ -12,68 +12,65 @@ This tool eliminates keyword drift by building product feeds directly from your 
 - 🔄 **Automated Enrichment**: Fetches product details, pricing, and images via PA-API
 - 🎯 **Smart Ranking**: Rank by ordered items, revenue, or custom metrics
 - 📦 **Batch Processing**: Efficient PA-API calls (10 ASINs per request)
-- 🔔 **Slack Notifications**: Real-time feed generation summaries
-- 💰 **Cost Effective**: ~$0/month (Pipedream free tier + existing PA-API access)
+- 💰 **Cost Effective**: ~$0/month (PA-API free tier)
 
 ## How It Works
 
 ```
-AA CSV Report → Parse ASINs → Aggregate & Rank → Enrich via PA-API → Generate JSON Feed → Slack Alert
+AA CSV/XLSX Report → Parse ASINs → Aggregate & Rank → Enrich via PA-API → Generate JSON Feed
 ```
 
-1. **Import AA Data**: Parse CSV with ASIN, Ordered Items, Shipped Revenue, Earnings, Clicks
+1. **Import AA Data**: Parse CSV/XLSX with ASIN, Ordered Items, Shipped Revenue, Earnings, Clicks
 2. **Aggregate & Rank**: Group by ASIN, rank by performance (default: ordered items)
 3. **Enrich Products**: Batch fetch titles, prices, images, availability via PA-API
-4. **Generate Feeds**: Output ranked JSON feeds organized by publisher/credential/date
-5. **Notify Team**: Post summary to Slack with top performers and stats
+4. **Generate Feeds**: Output ranked JSON feeds ready for integration
 
 ## Quick Start
 
 ```bash
-# 1. Clone and setup
-cd "AA Api"
+# 1. Install dependencies
+npm install
 
-# 2. Configure credentials (copy from template)
+# 2. Configure credentials
 cp config.template.js config.js
 # Edit config.js with your PA-API credentials
 
-# 3. Deploy to Pipedream
-# - Import pipedream-workflow-template.js
-# - Connect Google Drive trigger (for AA CSV uploads)
-# - Add Slack webhook
-# - Test with sample AA report
+# 3. Test with your data
+node src/aa-csv-parser.js your-aa-report.xlsx
+node src/asin-aggregator.js your-aa-report.xlsx --top-n 100
 
-# 4. Upload AA CSV to trigger folder
-# Feed generation happens automatically!
+# 4. Enrich products
+# Get top ASINs from step 3, then:
+node src/pa-api-client.js ASIN1,ASIN2,ASIN3
+
+# 5. Integrate into your workflow
+# Use the modules in your automation system
 ```
 
-See [QUICKSTART.md](./QUICKSTART.md) for detailed 15-minute setup guide.
+See documentation in `docs/` for detailed guides.
 
 ## Project Structure
 
 ```
 /AA Api/
 ├── README.md                          # This file
-├── QUICKSTART.md                      # 15-min setup guide
 ├── PROJECT_SUMMARY.md                 # Technical overview
 ├── config.template.js                 # Credentials template
+├── package.json                       # Dependencies
 ├── src/
-│   ├── aa-csv-parser.js              # Parse Amazon Associates reports
+│   ├── aa-csv-parser.js              # Parse Amazon Associates reports (CSV/XLSX)
 │   ├── asin-aggregator.js            # Aggregate and rank ASINs
 │   ├── pa-api-client.js              # Amazon PA-API integration
 │   ├── aws-signature-v4.js           # AWS auth for PA-API
-│   ├── feed-generator.js             # JSON feed builder
-│   └── slack-notifier.js             # Slack message formatter
-├── pipedream-workflow-template.js     # Complete Pipedream workflow
+│   └── feed-generator.js             # JSON feed builder
 ├── docs/
 │   ├── PRD.md                        # Product Requirements
 │   ├── ARCHITECTURE.md               # System design
-│   ├── SETUP_CHECKLIST.md            # Deployment checklist
 │   ├── TROUBLESHOOTING.md            # Common issues
 │   └── PA_API_GUIDE.md               # PA-API reference
 └── sample-data/
     ├── aa-report-sample.csv          # Example AA export
-    └── expected-output.json          # Example feed output
+    └── SUPPORTED_FORMATS.md          # CSV/XLSX/XLS support guide
 ```
 
 ## Output Format
@@ -108,9 +105,8 @@ Feeds are saved as: `/feeds/{publisher}/{credential}/YYYYMMDD/top-products.json`
 ## Requirements
 
 - Amazon Product Advertising API credentials (AccessKey, SecretKey, AssociateTag)
-- Pipedream account (free tier)
-- Slack webhook for notifications
-- Google Drive for AA CSV storage (optional, can use other triggers)
+- Node.js 18+
+- Amazon Associates account with AA reports (CSV or XLSX format)
 
 ## Documentation
 

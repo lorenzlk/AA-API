@@ -60,22 +60,6 @@ module.exports = {
   },
 
   // ============================================
-  // Slack Notifications
-  // ============================================
-  slack: {
-    // Webhook URL from https://api.slack.com/messaging/webhooks
-    webhookUrl: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX',
-    
-    // Notification settings
-    enabled: true,
-    notifyOnSuccess: true,
-    notifyOnError: true,
-    
-    // Include top N products in notification
-    includeTopProducts: 5,
-  },
-
-  // ============================================
   // Processing Options
   // ============================================
   processing: {
