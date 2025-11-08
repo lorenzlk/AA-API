@@ -526,6 +526,8 @@
     function displayResults(data) {
       results.style.display = 'block';
       
+      console.log('Display results called with data:', JSON.stringify(data, null, 2));
+      
       const productGrid = document.getElementById('productGrid');
       productGrid.innerHTML = '';
       
@@ -656,6 +658,8 @@
     }
     
     async function simulateEnrich(rankedResult) {
+      console.log('Enriching products:', rankedResult.products.length);
+      
       const response = await fetch('/api/enrich', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -664,10 +668,13 @@
       
       if (!response.ok) {
         const error = await response.json();
+        console.error('Enrich API error:', error);
         throw new Error(error.error || 'Enrich failed');
       }
       
-      return await response.json();
+      const result = await response.json();
+      console.log('Enrich result:', JSON.stringify(result, null, 2));
+      return result;
     }
   </script>
 </body>
