@@ -198,12 +198,27 @@ app.post('/api/pipeline', upload.single('file'), async (req, res) => {
 
     // Step 3: Enrich
     console.log('Step 3/3: Enriching with PA-API...');
+    console.log('Rank result structure:', JSON.stringify({
+      success: rankResult.success,
+      productsCount: rankResult.products?.length,
+      hasMetadata: !!rankResult.metadata
+    }));
+    
     const enrichResult = await paApi.enrichProducts(rankResult, config.paApi);
     
-    const successRate = enrichResult.metadata?.successRate || 
-                       (enrichResult.metadata?.enrichedCount / enrichResult.metadata?.totalAsins) || 0;
+    console.log('Enrich result structure:', JSON.stringify({
+      success: enrichResult.success,
+      productsCount: enrichResult.products?.length,
+      hasMetadata: !!enrichResult.metadata,
+      metadata: enrichResult.metadata
+    }));
     
-    console.log(`✅ Enriched ${enrichResult.metadata.enrichedCount}/${rankResult.products.length} (${(successRate * 100).toFixed(1)}%)`);
+    // Safe metadata extraction
+    const enrichedCount = enrichResult.metadata?.enrichedCount || enrichResult.products?.length || 0;
+    const totalAsins = enrichResult.metadata?.totalAsins || rankResult.products.length;
+    const successRate = enrichResult.metadata?.successRate || (enrichedCount / totalAsins) || 0;
+    
+    console.log(`✅ Enriched ${enrichedCount}/${totalAsins} (${(successRate * 100).toFixed(1)}%)`);
 
     // Clean up temp file
     await fs.unlink(req.file.path).catch(() => {});
@@ -224,7 +239,7 @@ app.post('/api/pipeline', upload.single('file'), async (req, res) => {
         rankedBy: rankBy
       },
       enrich: {
-        enrichedCount: enrichResult.metadata.enrichedCount || 0,
+        enrichedCount: enrichedCount,
         successRate: successRate
       },
       products: enrichResult.products || [],
