@@ -54,7 +54,10 @@ const upload = multer({
 
 // Serve static files
 app.use(express.static(path.join(__dirname)));
-app.use(express.json());
+
+// Increase body size limits for large file uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Main page
 app.get('/', (req, res) => {
