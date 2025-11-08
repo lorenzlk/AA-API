@@ -500,7 +500,9 @@
       updateProgress(90, 'Enriching with PA-API...');
       updateStepStatus('step-enrich', 'active');
       const enrichedResult = await simulateEnrich(rankedResult);
-      document.getElementById('enriched-count').textContent = `${enrichedResult.products.length} (${(enrichedResult.metadata.successRate * 100).toFixed(0)}%)`;
+      const successRate = enrichedResult.metadata?.successRate || 
+                         (enrichedResult.products?.length / rankedResult.products?.length) || 0;
+      document.getElementById('enriched-count').textContent = `${enrichedResult.products.length} (${(successRate * 100).toFixed(0)}%)`;
       updateStepStatus('step-enrich', 'complete');
       await sleep(500);
       
