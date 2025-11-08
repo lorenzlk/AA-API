@@ -160,7 +160,9 @@ app.post('/api/enrich', async (req, res) => {
 
     console.log(`Enriching ${products.length} products via PA-API`);
     
-    const result = await paApi.enrichProducts(products, config.paApi);
+    // Use enrichAsins since we're passing products array directly
+    // enrichProducts expects full aggregator result object with { success, products, metadata }
+    const result = await paApi.enrichAsins(products, config.paApi);
     
     res.json(result);
   } catch (error) {
