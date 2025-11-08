@@ -137,3 +137,21 @@ For issues or questions, check [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) o
 
 Internal use only - Mula/TWSN
 
+
+## Supported File Formats
+
+The tool supports multiple Amazon Associates report formats:
+
+- ✅ **CSV** (.csv) - Standard comma-separated values
+- ✅ **XLSX** (.xlsx) - Excel 2007+ format
+- ✅ **XLS** (.xls) - Excel 97-2003 format
+
+The parser automatically detects the format and handles all the same way. Just upload your AA report in any of these formats!
+
+```bash
+# Works with any format
+node src/aa-csv-parser.js your-report.csv
+node src/aa-csv-parser.js your-report.xlsx
+```
+
+See [sample-data/SUPPORTED_FORMATS.md](./sample-data/SUPPORTED_FORMATS.md) for details.

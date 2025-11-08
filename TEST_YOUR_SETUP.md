@@ -24,15 +24,19 @@ node src/pa-api-client.js B07PGL2ZSL
 
 If this works, your PA-API credentials are correct! ✅
 
-### 2. Test CSV Parser
+### 2. Test File Parser (CSV or XLSX)
 
 ```bash
+# CSV file
 node src/aa-csv-parser.js sample-data/aa-report-sample.csv
+
+# Or XLSX file (if you have one)
+node src/aa-csv-parser.js sample-data/your-report.xlsx
 ```
 
 **Expected output:**
 ```
-✅ CSV Parsed Successfully
+✅ File Parsed Successfully
 
 Metadata:
   Total Rows: 20

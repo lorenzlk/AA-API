@@ -314,12 +314,15 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   
   if (args.length === 0) {
-    console.log('Usage: node asin-aggregator.js <path-to-csv> [options]');
+    console.log('Usage: node asin-aggregator.js <path-to-file> [options]');
+    console.log('\nSupported formats: CSV, XLSX, XLS');
     console.log('\nOptions:');
     console.log('  --rank-by <metric>    Ranking metric (default: ordered_items)');
     console.log('  --top-n <number>      Number of top products (default: 100)');
     console.log('  --min-orders <number> Minimum ordered items filter');
-    console.log('\nExample: node asin-aggregator.js sample-data/aa-report.csv --rank-by revenue --top-n 50');
+    console.log('\nExamples:');
+    console.log('  node asin-aggregator.js sample-data/aa-report.csv --rank-by revenue --top-n 50');
+    console.log('  node asin-aggregator.js sample-data/aa-report.xlsx --top-n 100');
     process.exit(1);
   }
   
@@ -328,7 +331,7 @@ if (require.main === module) {
   const topN = args.includes('--top-n') ? parseInt(args[args.indexOf('--top-n') + 1]) : 100;
   const minOrders = args.includes('--min-orders') ? parseInt(args[args.indexOf('--min-orders') + 1]) : 0;
   
-  parser.parseCSV(filePath)
+  parser.parseFile(filePath)
     .then(parseResult => {
       if (!parseResult.success) {
         console.error('❌ Failed to parse CSV:', parseResult.error);
