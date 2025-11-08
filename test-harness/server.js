@@ -191,15 +191,19 @@ app.post('/api/pipeline', upload.single('file'), async (req, res) => {
     console.log(`✅ Parsed ${parseResult.metadata.validProducts} products`);
 
     // Step 2: Aggregate & Rank (combined)
-    console.log('Step 2/4: Aggregating & Ranking...');
+    console.log('Step 2/3: Aggregating & Ranking...');
     const rankResult = aggregator.aggregateAndRank(parseResult.products, { rankBy, topN });
-    console.log(`✅ Found ${rankResult.metadata.uniqueAsins} unique ASINs`);
+    console.log(`✅ Found ${rankResult.metadata.totalProducts} unique ASINs`);
     console.log(`✅ Ranked top ${rankResult.products.length} products`);
 
     // Step 3: Enrich
     console.log('Step 3/3: Enriching with PA-API...');
-    const enrichResult = await paApi.enrichProducts(rankResult.products, config.paApi);
-    console.log(`✅ Enriched ${enrichResult.products.length}/${rankResult.products.length} (${(enrichResult.metadata.successRate * 100).toFixed(1)}%)`);
+    const enrichResult = await paApi.enrichProducts(rankResult, config.paApi);
+    
+    const successRate = enrichResult.metadata?.successRate || 
+                       (enrichResult.metadata?.enrichedCount / enrichResult.metadata?.totalAsins) || 0;
+    
+    console.log(`✅ Enriched ${enrichResult.metadata.enrichedCount}/${rankResult.products.length} (${(successRate * 100).toFixed(1)}%)`);
 
     // Clean up temp file
     await fs.unlink(req.file.path).catch(() => {});
@@ -213,17 +217,17 @@ app.post('/api/pipeline', upload.single('file'), async (req, res) => {
         source: parseResult.metadata.source
       },
       aggregate: {
-        uniqueAsins: rankResult.metadata.uniqueAsins
+        uniqueAsins: rankResult.metadata.totalProducts
       },
       rank: {
         topN: rankResult.products.length,
         rankedBy: rankBy
       },
       enrich: {
-        enrichedCount: enrichResult.products.length,
-        successRate: enrichResult.metadata.successRate
+        enrichedCount: enrichResult.metadata.enrichedCount || 0,
+        successRate: successRate
       },
-      products: enrichResult.products,
+      products: enrichResult.products || [],
       failed: enrichResult.failed || [],
       errors: enrichResult.errors || []
     });
