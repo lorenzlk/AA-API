@@ -1,0 +1,42 @@
+{
+  "name": "amazon-product-feed-enrichment",
+  "version": "1.0.0",
+  "description": "Transform Amazon Associates performance data into high-converting product feeds using PA-API enrichment",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"No tests specified yet\" && exit 0",
+    "parse-csv": "node src/aa-csv-parser.js",
+    "enrich": "node src/pa-api-client.js",
+    "generate-feed": "node src/feed-generator.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lorenzlk/AA-API.git"
+  },
+  "keywords": [
+    "amazon",
+    "associates",
+    "product-feed",
+    "pa-api",
+    "affiliate",
+    "automation",
+    "pipedream",
+    "serverless"
+  ],
+  "author": "Logan Lorenz <logan@mula.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lorenzlk/AA-API/issues"
+  },
+  "homepage": "https://github.com/lorenzlk/AA-API#readme",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "crypto-js": "^4.2.0",
+    "papaparse": "^5.4.1"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+
