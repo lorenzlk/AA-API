@@ -204,6 +204,7 @@ function signPaApiRequest(params) {
     region,
     host,
     path = '/paapi5/getitems',
+    operation = 'GetItems', // GetItems, SearchItems, etc.
   } = params;
   
   const payloadString = JSON.stringify(payload);
@@ -215,6 +216,7 @@ function signPaApiRequest(params) {
       'content-encoding': 'amz-1.0',
       'content-type': 'application/json; charset=utf-8',
       'host': host,
+      'x-amz-target': `com.amazon.paapi5.v1.ProductAdvertisingAPIv1.${operation}`,
     },
     payload: payloadString,
     accessKey,

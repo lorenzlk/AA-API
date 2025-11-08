@@ -117,6 +117,7 @@ async function getItemsBatch(asins, config) {
     region,
     host,
     path,
+    operation: 'GetItems',
   });
   
   // Make request
