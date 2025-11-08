@@ -24,9 +24,21 @@ const config = require('../config');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configure multer for file uploads
+// Configure multer for file uploads with extension preservation
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, os.tmpdir());
+  },
+  filename: (req, file, cb) => {
+    // Preserve file extension for parser
+    const ext = path.extname(file.originalname);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'aa-upload-' + uniqueSuffix + ext);
+  }
+});
+
 const upload = multer({
-  dest: os.tmpdir(),
+  storage: storage,
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB max
   },
