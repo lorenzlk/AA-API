@@ -529,6 +529,34 @@
       const productGrid = document.getElementById('productGrid');
       productGrid.innerHTML = '';
       
+      // Show errors if any
+      if (data.errors && data.errors.length > 0) {
+        const errorBox = document.createElement('div');
+        errorBox.style.cssText = 'background: #fff5f5; border: 1px solid #fc8181; padding: 20px; border-radius: 8px; margin-bottom: 20px;';
+        errorBox.innerHTML = `
+          <h3 style="color: #c53030; margin-bottom: 10px;">⚠️ Enrichment Errors (${data.errors.length})</h3>
+          ${data.errors.slice(0, 3).map(err => `
+            <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 4px;">
+              <strong>ASIN:</strong> ${err.asin}<br>
+              <strong>Error:</strong> ${err.message || err.code}
+            </div>
+          `).join('')}
+          ${data.errors.length > 3 ? `<p style="margin-top: 10px;">...and ${data.errors.length - 3} more errors</p>` : ''}
+        `;
+        productGrid.parentElement.insertBefore(errorBox, productGrid);
+      }
+      
+      if (!data.products || data.products.length === 0) {
+        productGrid.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #718096;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">😕</div>
+            <h3>No products were enriched</h3>
+            <p>Check the errors above for details</p>
+          </div>
+        `;
+        return;
+      }
+      
       data.products.forEach((product, index) => {
         const card = document.createElement('div');
         card.className = 'product-card';
