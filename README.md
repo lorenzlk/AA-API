@@ -27,6 +27,8 @@ AA CSV/XLSX Report → Parse ASINs → Aggregate & Rank → Enrich via PA-API �
 
 ## Quick Start
 
+### Option 1: Visual Test Harness (Recommended)
+
 ```bash
 # 1. Install dependencies
 npm install
@@ -35,16 +37,28 @@ npm install
 cp config.template.js config.js
 # Edit config.js with your PA-API credentials
 
-# 3. Test with your data
+# 3. Start test harness
+npm run test-harness
+
+# 4. Open browser
+# Visit http://localhost:3000
+# Drag & drop your AA report
+# Watch the magic happen! ✨
+```
+
+See **[test-harness/README.md](./test-harness/README.md)** for details.
+
+### Option 2: Command Line
+
+```bash
+# Parse report
 node src/aa-csv-parser.js your-aa-report.xlsx
+
+# Rank ASINs
 node src/asin-aggregator.js your-aa-report.xlsx --top-n 100
 
-# 4. Enrich products
-# Get top ASINs from step 3, then:
+# Enrich products
 node src/pa-api-client.js ASIN1,ASIN2,ASIN3
-
-# 5. Integrate into your workflow
-# Use the modules in your automation system
 ```
 
 See documentation in `docs/` for detailed guides.
@@ -110,6 +124,8 @@ Feeds are saved as: `/feeds/{publisher}/{credential}/YYYYMMDD/top-products.json`
 
 ## Documentation
 
+- **[CORE_MODULES.md](./CORE_MODULES.md)** - ⭐ Module summary & test results
+- **[test-harness/README.md](./test-harness/README.md)** - 🎨 Visual test harness guide
 - **[docs/PRD.md](./docs/PRD.md)** - Full product requirements
 - **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System design & data flow
 - **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Common issues & fixes

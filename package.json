@@ -5,6 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"No tests specified yet\" && exit 0",
+    "test-harness": "node test-harness/server.js",
+    "dev": "node test-harness/server.js",
     "parse-csv": "node src/aa-csv-parser.js",
     "enrich": "node src/pa-api-client.js",
     "generate-feed": "node src/feed-generator.js"
@@ -32,12 +34,12 @@
   "dependencies": {
     "axios": "^1.6.0",
     "crypto-js": "^4.2.0",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
     "papaparse": "^5.4.1",
     "xlsx": "^0.18.5"
   },
-  "devDependencies": {},
   "engines": {
     "node": ">=18.0.0"
   }
 }
-

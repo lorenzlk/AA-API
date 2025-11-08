@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AA Feed Enrichment - Test Harness</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+    
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    
+    .card h2 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 1.5rem;
+    }
+    
+    .upload-area {
+      border: 3px dashed #667eea;
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .upload-area:hover {
+      background: #f8f9ff;
+      border-color: #764ba2;
+    }
+    
+    .upload-area.dragging {
+      background: #f0f4ff;
+      border-color: #4c51bf;
+    }
+    
+    .upload-area input[type="file"] {
+      display: none;
+    }
+    
+    .upload-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+    
+    .btn-secondary:hover {
+      background: #cbd5e0;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .progress {
+      display: none;
+      margin-top: 20px;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    
+    .progress-text {
+      margin-top: 10px;
+      text-align: center;
+      color: #4a5568;
+    }
+    
+    .results {
+      display: none;
+    }
+    
+    .pipeline-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .pipeline-step {
+      background: #f7fafc;
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 4px solid #cbd5e0;
+    }
+    
+    .pipeline-step.active {
+      border-left-color: #667eea;
+      background: #f0f4ff;
+    }
+    
+    .pipeline-step.complete {
+      border-left-color: #48bb78;
+      background: #f0fff4;
+    }
+    
+    .pipeline-step h3 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #718096;
+      margin-bottom: 10px;
+    }
+    
+    .pipeline-step .value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #2d3748;
+    }
+    
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .product-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+    
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    .product-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background: #f7fafc;
+    }
+    
+    .product-content {
+      padding: 20px;
+    }
+    
+    .product-rank {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    
+    .product-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 12px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .product-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    
+    .stat {
+      text-align: center;
+      padding: 10px;
+      background: #f7fafc;
+      border-radius: 6px;
+    }
+    
+    .stat-label {
+      font-size: 0.75rem;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .stat-value {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #2d3748;
+      margin-top: 4px;
+    }
+    
+    .product-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .product-price {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #48bb78;
+    }
+    
+    .product-asin {
+      font-size: 0.85rem;
+      color: #a0aec0;
+      font-family: monospace;
+    }
+    
+    .error {
+      background: #fff5f5;
+      border: 1px solid #feb2b2;
+      color: #c53030;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #718096;
+    }
+    
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      opacity: 0.3;
+    }
+    
+    @media (max-width: 768px) {
+      .product-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .pipeline-steps {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚀 AA Feed Enrichment</h1>
+      <p>Test Harness - Upload, Parse, Rank & Enrich</p>
+    </div>
+    
+    <div class="card">
+      <h2>📤 Upload Amazon Associates Report</h2>
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">📁</div>
+        <h3>Drop your AA report here or click to browse</h3>
+        <p style="color: #718096; margin-top: 10px;">Supports CSV, XLSX, and XLS formats</p>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+      </div>
+      
+      <div class="button-group">
+        <button class="btn btn-primary" id="processBtn" disabled>
+          🔄 Process Report
+        </button>
+        <button class="btn btn-secondary" id="clearBtn" style="display: none;">
+          🗑️ Clear & Start Over
+        </button>
+      </div>
+      
+      <div class="progress" id="progress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Starting...</div>
+      </div>
+      
+      <div id="errorContainer"></div>
+    </div>
+    
+    <div class="results" id="results">
+      <div class="card">
+        <h2>📊 Pipeline Results</h2>
+        <div class="pipeline-steps">
+          <div class="pipeline-step" id="step-parse">
+            <h3>Parsed Products</h3>
+            <div class="value" id="parsed-count">-</div>
+          </div>
+          <div class="pipeline-step" id="step-aggregate">
+            <h3>Unique ASINs</h3>
+            <div class="value" id="asin-count">-</div>
+          </div>
+          <div class="pipeline-step" id="step-rank">
+            <h3>Top Ranked</h3>
+            <div class="value" id="ranked-count">-</div>
+          </div>
+          <div class="pipeline-step" id="step-enrich">
+            <h3>PA-API Enriched</h3>
+            <div class="value" id="enriched-count">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>🏆 Top Products</h2>
+        <div class="product-grid" id="productGrid">
+          <div class="empty-state">
+            <div class="empty-state-icon">📦</div>
+            <p>No products to display yet</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const processBtn = document.getElementById('processBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const progress = document.getElementById('progress');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const results = document.getElementById('results');
+    const errorContainer = document.getElementById('errorContainer');
+    
+    let selectedFile = null;
+    
+    // Upload area interactions
+    uploadArea.addEventListener('click', () => fileInput.click());
+    
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragging');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragging');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragging');
+      
+      if (e.dataTransfer.files.length > 0) {
+        selectedFile = e.dataTransfer.files[0];
+        handleFileSelect();
+      }
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        selectedFile = e.target.files[0];
+        handleFileSelect();
+      }
+    });
+    
+    function handleFileSelect() {
+      uploadArea.innerHTML = `
+        <div class="upload-icon">✅</div>
+        <h3>${selectedFile.name}</h3>
+        <p style="color: #718096; margin-top: 10px;">${formatFileSize(selectedFile.size)}</p>
+      `;
+      processBtn.disabled = false;
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    
+    processBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+      
+      processBtn.disabled = true;
+      progress.style.display = 'block';
+      results.style.display = 'none';
+      errorContainer.innerHTML = '';
+      
+      try {
+        await processFile(selectedFile);
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        processBtn.disabled = false;
+        progress.style.display = 'none';
+      }
+    });
+    
+    clearBtn.addEventListener('click', () => {
+      location.reload();
+    });
+    
+    async function processFile(file) {
+      // Step 1: Parse
+      updateProgress(25, 'Parsing AA report...');
+      updateStepStatus('step-parse', 'active');
+      const parseResult = await simulateParse(file);
+      document.getElementById('parsed-count').textContent = parseResult.metadata.validProducts.toLocaleString();
+      updateStepStatus('step-parse', 'complete');
+      await sleep(500);
+      
+      // Step 2: Aggregate
+      updateProgress(50, 'Aggregating ASINs...');
+      updateStepStatus('step-aggregate', 'active');
+      const aggregateResult = await simulateAggregate(parseResult);
+      document.getElementById('asin-count').textContent = aggregateResult.metadata.totalAsins.toLocaleString();
+      updateStepStatus('step-aggregate', 'complete');
+      await sleep(500);
+      
+      // Step 3: Rank
+      updateProgress(75, 'Ranking top products...');
+      updateStepStatus('step-rank', 'active');
+      const rankedResult = await simulateRank(aggregateResult);
+      document.getElementById('ranked-count').textContent = rankedResult.products.length;
+      updateStepStatus('step-rank', 'complete');
+      await sleep(500);
+      
+      // Step 4: Enrich
+      updateProgress(90, 'Enriching with PA-API...');
+      updateStepStatus('step-enrich', 'active');
+      const enrichedResult = await simulateEnrich(rankedResult);
+      document.getElementById('enriched-count').textContent = `${enrichedResult.products.length} (${(enrichedResult.metadata.successRate * 100).toFixed(0)}%)`;
+      updateStepStatus('step-enrich', 'complete');
+      await sleep(500);
+      
+      // Display results
+      updateProgress(100, 'Complete!');
+      displayResults(enrichedResult);
+      clearBtn.style.display = 'inline-block';
+    }
+    
+    function updateProgress(percent, text) {
+      progressFill.style.width = percent + '%';
+      progressText.textContent = text;
+    }
+    
+    function updateStepStatus(stepId, status) {
+      const step = document.getElementById(stepId);
+      step.classList.remove('active', 'complete');
+      step.classList.add(status);
+    }
+    
+    function displayResults(data) {
+      results.style.display = 'block';
+      
+      const productGrid = document.getElementById('productGrid');
+      productGrid.innerHTML = '';
+      
+      data.products.forEach((product, index) => {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <img src="${product.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}" 
+               alt="${product.title}" 
+               class="product-image"
+               onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+          <div class="product-content">
+            <div class="product-rank">#${index + 1}</div>
+            <div class="product-title">${product.title || product.asin}</div>
+            <div class="product-stats">
+              <div class="stat">
+                <div class="stat-label">Revenue</div>
+                <div class="stat-value">$${product.shipped_revenue ? product.shipped_revenue.toFixed(0) : '0'}</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">Orders</div>
+                <div class="stat-value">${product.ordered_items || 0}</div>
+              </div>
+            </div>
+            <div class="product-meta">
+              <div class="product-price">${product.price ? '$' + product.price : 'N/A'}</div>
+              <div class="product-asin">${product.asin}</div>
+            </div>
+          </div>
+        `;
+        productGrid.appendChild(card);
+      });
+      
+      // Scroll to results
+      results.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function showError(message) {
+      errorContainer.innerHTML = `
+        <div class="error">
+          <strong>❌ Error:</strong> ${message}
+        </div>
+      `;
+    }
+    
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    // API calls to backend
+    async function simulateParse(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/parse', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Parse failed');
+      }
+      
+      return await response.json();
+    }
+    
+    async function simulateAggregate(parseResult) {
+      const response = await fetch('/api/aggregate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products: parseResult.products })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Aggregate failed');
+      }
+      
+      return await response.json();
+    }
+    
+    async function simulateRank(aggregateResult) {
+      const response = await fetch('/api/rank', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          aggregated: aggregateResult.aggregated,
+          rankBy: 'ordered_items',
+          topN: 10
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Rank failed');
+      }
+      
+      return await response.json();
+    }
+    
+    async function simulateEnrich(rankedResult) {
+      const response = await fetch('/api/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products: rankedResult.products })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Enrich failed');
+      }
+      
+      return await response.json();
+    }
+  </script>
+</body>
+</html>
+
