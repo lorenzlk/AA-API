@@ -99,9 +99,15 @@ app.post('/api/aggregate', async (req, res) => {
 
     console.log(`Aggregating ${products.length} products`);
     
-    const result = aggregator.aggregateAsins(products);
+    const aggregated = aggregator.aggregateByAsin(products);
     
-    res.json(result);
+    res.json({
+      success: true,
+      aggregated: aggregated,
+      metadata: {
+        totalAsins: aggregated.length
+      }
+    });
   } catch (error) {
     console.error('Aggregate error:', error);
     res.status(500).json({ 
@@ -122,9 +128,18 @@ app.post('/api/rank', async (req, res) => {
 
     console.log(`Ranking ${aggregated.length} ASINs (top ${topN} by ${rankBy})`);
     
-    const result = aggregator.rankAsins(aggregated, { rankBy, topN });
+    const ranked = aggregator.rankProducts(aggregated, rankBy);
+    const topProducts = topN ? ranked.slice(0, topN) : ranked;
     
-    res.json(result);
+    res.json({
+      success: true,
+      products: topProducts,
+      metadata: {
+        totalAsins: aggregated.length,
+        rankedBy: rankBy,
+        topN: topProducts.length
+      }
+    });
   } catch (error) {
     console.error('Rank error:', error);
     res.status(500).json({ 
@@ -175,18 +190,14 @@ app.post('/api/pipeline', upload.single('file'), async (req, res) => {
     const parseResult = await parser.parseFile(req.file.path);
     console.log(`✅ Parsed ${parseResult.metadata.validProducts} products`);
 
-    // Step 2: Aggregate
-    console.log('Step 2/4: Aggregating...');
-    const aggregateResult = aggregator.aggregateAsins(parseResult.products);
-    console.log(`✅ Found ${aggregateResult.metadata.totalAsins} unique ASINs`);
-
-    // Step 3: Rank
-    console.log('Step 3/4: Ranking...');
-    const rankResult = aggregator.rankAsins(aggregateResult.aggregated, { rankBy, topN });
+    // Step 2: Aggregate & Rank (combined)
+    console.log('Step 2/4: Aggregating & Ranking...');
+    const rankResult = aggregator.aggregateAndRank(parseResult.products, { rankBy, topN });
+    console.log(`✅ Found ${rankResult.metadata.uniqueAsins} unique ASINs`);
     console.log(`✅ Ranked top ${rankResult.products.length} products`);
 
-    // Step 4: Enrich
-    console.log('Step 4/4: Enriching with PA-API...');
+    // Step 3: Enrich
+    console.log('Step 3/3: Enriching with PA-API...');
     const enrichResult = await paApi.enrichProducts(rankResult.products, config.paApi);
     console.log(`✅ Enriched ${enrichResult.products.length}/${rankResult.products.length} (${(enrichResult.metadata.successRate * 100).toFixed(1)}%)`);
 
@@ -202,7 +213,7 @@ app.post('/api/pipeline', upload.single('file'), async (req, res) => {
         source: parseResult.metadata.source
       },
       aggregate: {
-        uniqueAsins: aggregateResult.metadata.totalAsins
+        uniqueAsins: rankResult.metadata.uniqueAsins
       },
       rank: {
         topN: rankResult.products.length,
