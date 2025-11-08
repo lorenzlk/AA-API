@@ -110,11 +110,11 @@ Feeds are saved as: `/feeds/{publisher}/{credential}/YYYYMMDD/top-products.json`
 
 ## Documentation
 
-- **[QUICKSTART.md](./QUICKSTART.md)** - Get running in 15 minutes
 - **[docs/PRD.md](./docs/PRD.md)** - Full product requirements
-- **[docs/SETUP_CHECKLIST.md](./docs/SETUP_CHECKLIST.md)** - Pre-deployment checklist
-- **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Common issues and fixes
+- **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System design & data flow
+- **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Common issues & fixes
 - **[docs/PA_API_GUIDE.md](./docs/PA_API_GUIDE.md)** - PA-API integration details
+- **[sample-data/SUPPORTED_FORMATS.md](./sample-data/SUPPORTED_FORMATS.md)** - CSV/XLSX format guide
 
 ## Future Enhancements
 
