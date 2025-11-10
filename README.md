@@ -114,7 +114,6 @@ Feeds are saved as: `/feeds/{publisher}/{credential}/YYYYMMDD/top-products.json`
 - ✅ 95% ASIN enrichment success rate
 - ⚡ <1.5s avg API latency per batch
 - 🕐 Feeds updated within 24h of new AA data
-- 📈 +15% CTR vs. keyword-based feeds (target)
 
 ## Requirements
 
@@ -131,15 +130,6 @@ Feeds are saved as: `/feeds/{publisher}/{credential}/YYYYMMDD/top-products.json`
 - **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Common issues & fixes
 - **[docs/PA_API_GUIDE.md](./docs/PA_API_GUIDE.md)** - PA-API integration details
 - **[sample-data/SUPPORTED_FORMATS.md](./sample-data/SUPPORTED_FORMATS.md)** - CSV/XLSX format guide
-
-## Future Enhancements
-
-- 🏷️ Discount-based ranking (prioritize sale items)
-- 🌍 Multi-marketplace support (CA, UK, DE)
-- 📊 Week-over-week trending analysis
-- 💾 Firestore/Sheets caching layer
-- 🎨 Product clustering by category
-- 🔍 Automatic category detection
 
 ## Support
 
