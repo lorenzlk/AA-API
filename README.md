@@ -4,7 +4,7 @@
 
 ## Overview
 
-This tool eliminates keyword drift by building product feeds directly from your Amazon Associates (AA) ASIN performance data. It enriches ASINs via the Amazon Product Advertising API (PA-API) and outputs clean, JSON-ready feeds for publisher integration.
+This tool enriches ASINs via the Amazon Product Advertising API (PA-API) and outputs clean, JSON-ready feeds for publisher integration.
 
 ## Key Features
 
