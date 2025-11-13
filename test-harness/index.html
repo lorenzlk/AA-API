@@ -201,6 +201,9 @@
       border-radius: 8px;
       overflow: hidden;
       transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
     
     .product-card:hover {
@@ -208,16 +211,56 @@
       box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     }
     
+    .product-content {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      padding: 20px;
+    }
+    
     .product-image {
       width: 100%;
       height: 200px;
       object-fit: cover;
       background: #f7fafc;
+      display: block;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
     }
     
-    .product-content {
-      padding: 20px;
+    .product-image.loaded {
+      opacity: 1;
     }
+    
+    .product-image-container {
+      width: 100%;
+      height: 200px;
+      background: #f7fafc;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .product-image-placeholder {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+      100% {
+        background-position: 200% 0;
+      }
+    }
+    
+    /* .product-content moved to .product-card section above */
     
     .product-rank {
       display: inline-block;
@@ -271,11 +314,16 @@
     }
     
     .product-meta {
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+      min-height: 60px;
+    }
+    
+    .product-price-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-top: 12px;
-      border-top: 1px solid #e2e8f0;
+      margin-top: 8px;
     }
     
     .product-price {
@@ -381,7 +429,17 @@
       </div>
       
       <div class="card">
-        <h2>🏆 Top Products</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0;">🏆 Top Products</h2>
+          <div id="feedButtons" style="display: none;">
+            <button class="btn btn-secondary" id="downloadAllBtn" style="margin-right: 10px;">
+              📥 Download Full Feed
+            </button>
+            <button class="btn btn-primary" id="downloadSalesBtn">
+              🏷️ Download Sales-Only Feed
+            </button>
+          </div>
+        </div>
         <div class="product-grid" id="productGrid">
           <div class="empty-state">
             <div class="empty-state-icon">📦</div>
@@ -535,15 +593,38 @@
       if (data.errors && data.errors.length > 0) {
         const errorBox = document.createElement('div');
         errorBox.style.cssText = 'background: #fff5f5; border: 1px solid #fc8181; padding: 20px; border-radius: 8px; margin-bottom: 20px;';
+        
+        // Helper function to extract error message
+        const getErrorMessage = (err) => {
+          if (typeof err === 'string') return err;
+          if (err.message) return err.message;
+          if (err.Message) return err.Message;
+          if (err.code) return err.code;
+          if (err.Code) return err.Code;
+          if (typeof err === 'object') {
+            try {
+              return JSON.stringify(err);
+            } catch {
+              return 'Unknown error';
+            }
+          }
+          return 'Unknown error';
+        };
+        
         errorBox.innerHTML = `
           <h3 style="color: #c53030; margin-bottom: 10px;">⚠️ Enrichment Errors (${data.errors.length})</h3>
-          ${data.errors.slice(0, 3).map(err => `
-            <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 4px;">
-              <strong>ASIN:</strong> ${err.asin}<br>
-              <strong>Error:</strong> ${err.message || err.code}
-            </div>
-          `).join('')}
-          ${data.errors.length > 3 ? `<p style="margin-top: 10px;">...and ${data.errors.length - 3} more errors</p>` : ''}
+          ${data.errors.slice(0, 5).map(err => {
+            const asin = err.asin || err.ASIN || 'Unknown';
+            const message = getErrorMessage(err);
+            return `
+              <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 4px;">
+                <strong>ASIN:</strong> ${asin}<br>
+                <strong>Error:</strong> ${message}
+                ${err.code || err.Code ? `<br><strong>Code:</strong> ${err.code || err.Code}` : ''}
+              </div>
+            `;
+          }).join('')}
+          ${data.errors.length > 5 ? `<p style="margin-top: 10px; color: #718096;">...and ${data.errors.length - 5} more errors</p>` : ''}
         `;
         productGrid.parentElement.insertBefore(errorBox, productGrid);
       }
@@ -562,11 +643,27 @@
       data.products.forEach((product, index) => {
         const card = document.createElement('div');
         card.className = 'product-card';
+        
+        // Handle both camelCase and snake_case field names
+        const imageUrl = product.image_url || product.imageUrl || null;
+        const placeholderUrl = 'https://via.placeholder.com/300x200?text=No+Image';
+        
         card.innerHTML = `
-          <img src="${product.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}" 
-               alt="${product.title}" 
-               class="product-image"
-               onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+          <div class="product-image-container">
+            <div class="product-image-placeholder"></div>
+            ${imageUrl ? `
+              <img src="${imageUrl}" 
+                   alt="${product.title || product.asin}" 
+                   class="product-image"
+                   loading="lazy"
+                   data-asin="${product.asin}">
+            ` : `
+              <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a0aec0;">
+                <div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.5;">📦</div>
+                <div style="font-size: 0.875rem; font-weight: 500;">No Image</div>
+              </div>
+            `}
+          </div>
           <div class="product-content">
             <div class="product-rank">#${index + 1}</div>
             <div class="product-title">${product.title || product.asin}</div>
@@ -580,17 +677,196 @@
                 <div class="stat-value">${product.ordered_items || 0}</div>
               </div>
             </div>
-            <div class="product-meta">
-              <div class="product-price">${product.price ? '$' + product.price : 'N/A'}</div>
-              <div class="product-asin">${product.asin}</div>
+            <div class="product-meta" style="margin-top: auto;">
+              ${product.is_on_sale ? `
+                <div style="margin-bottom: 10px;">
+                  <div style="display: inline-block; background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%); color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; margin-bottom: 6px; box-shadow: 0 2px 4px rgba(245, 101, 101, 0.3);">
+                    🏷️ ON SALE - ${product.discount_percentage}% OFF
+                  </div>
+                  <div style="font-size: 0.85rem; color: #718096; text-decoration: line-through; margin-top: 4px; font-weight: 500;">
+                    Was: $${product.original_price}
+                  </div>
+                </div>
+              ` : '<div style="margin-bottom: 8px;"></div>'}
+              <div class="product-price-row">
+                <div class="product-price" style="${product.is_on_sale ? 'color: #f56565; font-weight: bold; font-size: 1.1rem;' : ''}">
+                  ${product.price ? '$' + product.price : 'N/A'}
+                </div>
+                <div class="product-asin">${product.asin}</div>
+              </div>
             </div>
           </div>
         `;
+        
         productGrid.appendChild(card);
+        
+        // Handle image loading with proper error handling (only if image exists)
+        const img = card.querySelector('.product-image');
+        const placeholder = card.querySelector('.product-image-placeholder');
+        
+        if (img) {
+          img.addEventListener('load', () => {
+            img.classList.add('loaded');
+            if (placeholder) {
+              placeholder.style.display = 'none';
+            }
+          });
+          
+          img.addEventListener('error', () => {
+            // Hide broken image and show fallback
+            img.style.display = 'none';
+            if (placeholder) {
+              placeholder.style.display = 'none';
+            }
+            // Show fallback text
+            const container = card.querySelector('.product-image-container');
+            const fallback = container.querySelector('.image-fallback') || document.createElement('div');
+            if (!fallback.classList.contains('image-fallback')) {
+              fallback.className = 'image-fallback';
+              fallback.style.cssText = 'width: 100%; height: 100%; background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a0aec0; position: absolute; top: 0; left: 0;';
+              fallback.innerHTML = '<div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.5;">📦</div><div style="font-size: 0.875rem; font-weight: 500;">No Image</div>';
+              container.appendChild(fallback);
+            }
+            fallback.style.display = 'flex';
+          });
+        } else if (placeholder) {
+          // No image URL provided, hide placeholder immediately
+          placeholder.style.display = 'none';
+        }
+        
+        // If image is already cached, show it immediately
+        if (img && img.complete && img.naturalHeight !== 0) {
+          img.classList.add('loaded');
+          if (placeholder) {
+            placeholder.style.display = 'none';
+          }
+        }
       });
+      
+      // Show feed download buttons
+      const feedButtons = document.getElementById('feedButtons');
+      const downloadAllBtn = document.getElementById('downloadAllBtn');
+      const downloadSalesBtn = document.getElementById('downloadSalesBtn');
+      
+      if (data.products && data.products.length > 0) {
+        feedButtons.style.display = 'flex';
+        
+        // Count sales
+        const salesCount = data.products.filter(p => p.is_on_sale).length;
+        
+        // Remove old listeners and add new ones
+        const newDownloadAllBtn = downloadAllBtn.cloneNode(true);
+        downloadAllBtn.parentNode.replaceChild(newDownloadAllBtn, downloadAllBtn);
+        newDownloadAllBtn.addEventListener('click', () => {
+          downloadFeed(data.products, 'full');
+        });
+        
+        const newDownloadSalesBtn = downloadSalesBtn.cloneNode(true);
+        downloadSalesBtn.parentNode.replaceChild(newDownloadSalesBtn, downloadSalesBtn);
+        newDownloadSalesBtn.addEventListener('click', async () => {
+          if (salesCount === 0) {
+            alert('No products on sale found!');
+            return;
+          }
+          await downloadSalesOnlyFeed(data.products, newDownloadSalesBtn);
+        });
+        
+        // Update sales button text with count
+        if (salesCount > 0) {
+          newDownloadSalesBtn.textContent = `🏷️ Download Sales-Only Feed (${salesCount})`;
+          newDownloadSalesBtn.disabled = false;
+        } else {
+          newDownloadSalesBtn.disabled = true;
+          newDownloadSalesBtn.textContent = '🏷️ No Sales Found';
+        }
+      }
       
       // Scroll to results
       results.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function downloadFeed(products, type = 'full') {
+      const formattedProducts = products.map(p => formatProductForFeed(p));
+      const feed = {
+        generated_at: new Date().toISOString(),
+        feed_type: type,
+        total_products: formattedProducts.length,
+        products: formattedProducts
+      };
+      
+      downloadJSON(feed, `${type}-feed-${new Date().toISOString().split('T')[0]}.json`);
+    }
+    
+    async function downloadSalesOnlyFeed(products, buttonElement) {
+      const btn = buttonElement || document.getElementById('downloadSalesBtn');
+      const originalText = btn.textContent;
+      
+      try {
+        btn.disabled = true;
+        btn.textContent = '⏳ Generating...';
+        
+        const response = await fetch('/api/feed/sales-only/download', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ products })
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to generate sales-only feed');
+        }
+        
+        const feed = await response.json();
+        downloadJSON(feed, `sales-only-feed-${new Date().toISOString().split('T')[0]}.json`);
+        
+        btn.disabled = false;
+        btn.textContent = originalText;
+      } catch (error) {
+        console.error('Download error:', error);
+        alert(`Error: ${error.message}`);
+        btn.disabled = false;
+        const salesCount = products.filter(p => p.is_on_sale).length;
+        btn.textContent = salesCount > 0 
+          ? `🏷️ Download Sales-Only Feed (${salesCount})`
+          : '🏷️ No Sales Found';
+      }
+    }
+    
+    function downloadJSON(data, filename) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    function formatProductForFeed(product) {
+      return {
+        asin: product.asin,
+        title: product.title || 'Unknown Product',
+        price: product.price,
+        currency: product.currency || 'USD',
+        image_url: product.image_url || product.imageUrl,
+        link: product.link || `https://www.amazon.com/dp/${product.asin}`,
+        rank: product.rank,
+        ordered_items: product.ordered_items || 0,
+        shipped_revenue: product.shipped_revenue || 0,
+        earnings: product.earnings || 0,
+        clicks: product.clicks || 0,
+        conversion_rate: product.conversion_rate || 0,
+        ...(product.is_on_sale && {
+          is_on_sale: true,
+          original_price: product.original_price,
+          discount_amount: product.discount_amount,
+          discount_percentage: product.discount_percentage,
+        }),
+      };
     }
     
     function showError(message) {

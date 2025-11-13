@@ -29,7 +29,8 @@ module.exports = {
       'Images.Primary.Medium',
       'ItemInfo.Title',
       'Offers.Listings.Price',
-      'Offers.Listings.Availability'
+      'Offers.Listings.SavingBasis', // Original price when on sale
+      'Offers.Listings.Availability.Type', // Availability status
     ],
     
     // Rate limiting (free tier = 1 request/second)

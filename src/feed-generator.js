@@ -44,6 +44,13 @@ function formatProduct(product, associateTag) {
     ...(product.availability && { availability: product.availability }),
     ...(product.tags && { tags: product.tags }),
     ...(product.tag && { tag: product.tag }),
+    // Sale information
+    ...(product.is_on_sale && {
+      is_on_sale: product.is_on_sale,
+      original_price: product.original_price,
+      discount_amount: product.discount_amount,
+      discount_percentage: product.discount_percentage,
+    }),
   };
 }
 
@@ -72,6 +79,12 @@ function generateMetadata(products, options = {}) {
     ? products.filter(p => p.price).reduce((sum, p) => sum + p.price, 0) / products.filter(p => p.price).length
     : 0;
   
+  // Sale statistics
+  const saleProducts = products.filter(p => p.is_on_sale);
+  const avgDiscountPercentage = saleProducts.length > 0
+    ? saleProducts.reduce((sum, p) => sum + (p.discount_percentage || 0), 0) / saleProducts.length
+    : 0;
+  
   return {
     generated_at: new Date().toISOString(),
     report_date: reportDate || new Date().toISOString().split('T')[0],
@@ -98,6 +111,13 @@ function generateMetadata(products, options = {}) {
       average_price: avgPrice,
       average_conversion_rate: totalClicks > 0 ? totalOrders / totalClicks : 0,
     },
+    
+    // Sale statistics
+    sales: {
+      total_on_sale: saleProducts.length,
+      sale_percentage: products.length > 0 ? (saleProducts.length / products.length) * 100 : 0,
+      average_discount_percentage: avgDiscountPercentage,
+    },
   };
 }
 
@@ -111,6 +131,15 @@ async function ensureDirectory(dirPath) {
   } catch {
     await fs.mkdir(dirPath, { recursive: true });
   }
+}
+
+/**
+ * Filters products to only include items on sale
+ * @param {Object[]} products - Product array
+ * @returns {Object[]} Filtered products (sales only)
+ */
+function filterSalesOnly(products) {
+  return products.filter(p => p.is_on_sale === true);
 }
 
 /**
@@ -129,7 +158,15 @@ async function generateFeed(products, options = {}) {
     rankingMetric,
     enrichmentMetadata,
     generateMetadata: includeMetadata = true,
+    salesOnly = false, // Filter to only include products on sale
   } = options;
+  
+  // Filter to sales-only if requested
+  let filteredProducts = products;
+  if (salesOnly) {
+    filteredProducts = filterSalesOnly(products);
+    console.log(`📊 Filtering to sales-only: ${filteredProducts.length}/${products.length} products`);
+  }
   
   try {
     // Format date for directory name
@@ -142,10 +179,11 @@ async function generateFeed(products, options = {}) {
     await ensureDirectory(feedDir);
     
     // Format products for output
-    const formattedProducts = products.map(p => formatProduct(p, associateTag));
+    const formattedProducts = filteredProducts.map(p => formatProduct(p, associateTag));
     
     // Write main feed file
-    const feedPath = path.join(feedDir, 'top-products.json');
+    const feedFileName = salesOnly ? 'top-products-sales.json' : 'top-products.json';
+    const feedPath = path.join(feedDir, feedFileName);
     await fs.writeFile(
       feedPath,
       JSON.stringify(formattedProducts, null, 2),
@@ -210,10 +248,17 @@ function generateFeedStrings(products, options = {}) {
     publisherName,
     credentialName,
     enrichmentMetadata,
+    salesOnly = false,
   } = options;
   
+  // Filter to sales-only if requested
+  let filteredProducts = products;
+  if (salesOnly) {
+    filteredProducts = filterSalesOnly(products);
+  }
+  
   // Format products
-  const formattedProducts = products.map(p => formatProduct(p, associateTag));
+  const formattedProducts = filteredProducts.map(p => formatProduct(p, associateTag));
   
   // Generate metadata
   const metadata = generateMetadata(formattedProducts, {
@@ -316,6 +361,7 @@ module.exports = {
   generateFeedStrings,
   formatProduct,
   generateMetadata,
+  filterSalesOnly,
   readFeed,
   listFeeds,
 };

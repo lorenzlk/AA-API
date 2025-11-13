@@ -19,6 +19,7 @@ const os = require('os');
 const parser = require('../src/aa-csv-parser');
 const aggregator = require('../src/asin-aggregator');
 const paApi = require('../src/pa-api-client');
+const feedGen = require('../src/feed-generator');
 const config = require('../config');
 
 const app = express();
@@ -258,6 +259,105 @@ app.post('/api/pipeline', upload.single('file'), async (req, res) => {
   }
 });
 
+// API: Generate sales-only feed from products
+app.post('/api/feed/sales-only', express.json({ limit: '50mb' }), async (req, res) => {
+  try {
+    const { products } = req.body;
+    
+    if (!products || !Array.isArray(products)) {
+      return res.status(400).json({ error: 'Products array required' });
+    }
+    
+    // Filter to sales-only
+    const salesOnly = feedGen.filterSalesOnly(products);
+    
+    if (salesOnly.length === 0) {
+      return res.status(404).json({ 
+        error: 'No products on sale found',
+        totalProducts: products.length,
+        salesCount: 0
+      });
+    }
+    
+    // Generate feed strings
+    const feedResult = feedGen.generateFeedStrings(salesOnly, {
+      associateTag: config.paApi.associateTag,
+      publisherName: 'mula',
+      credentialName: 'primary',
+    });
+    
+    res.json({
+      success: true,
+      feed: JSON.parse(feedResult.feed),
+      metadata: JSON.parse(feedResult.metadata),
+      productCount: salesOnly.length,
+      totalProducts: products.length,
+      salesPercentage: ((salesOnly.length / products.length) * 100).toFixed(1)
+    });
+    
+  } catch (error) {
+    console.error('Sales-only feed error:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.stack 
+    });
+  }
+});
+
+// API: Download sales-only feed as JSON file
+app.post('/api/feed/sales-only/download', express.json({ limit: '50mb' }), async (req, res) => {
+  try {
+    const { products } = req.body;
+    
+    if (!products || !Array.isArray(products)) {
+      return res.status(400).json({ error: 'Products array required' });
+    }
+    
+    // Filter to sales-only
+    const salesOnly = feedGen.filterSalesOnly(products);
+    
+    if (salesOnly.length === 0) {
+      return res.status(404).json({ 
+        error: 'No products on sale found',
+        totalProducts: products.length
+      });
+    }
+    
+    // Format products for feed
+    const formattedProducts = salesOnly.map(p => feedGen.formatProduct(p, config.paApi.associateTag));
+    
+    // Generate metadata
+    const metadata = feedGen.generateMetadata(formattedProducts, {
+      associateTag: config.paApi.associateTag,
+      publisherName: 'mula',
+      credentialName: 'primary',
+    });
+    
+    // Create feed object
+    const feed = {
+      generated_at: new Date().toISOString(),
+      feed_type: 'sales_only',
+      total_products: formattedProducts.length,
+      total_original: products.length,
+      sales_percentage: ((formattedProducts.length / products.length) * 100).toFixed(1),
+      products: formattedProducts,
+      metadata: metadata
+    };
+    
+    // Send as downloadable JSON file
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="sales-only-feed-${new Date().toISOString().split('T')[0]}.json"`);
+    res.json(feed);
+    
+  } catch (error) {
+    console.error('Sales-only feed download error:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.stack 
+    });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -294,6 +394,8 @@ app.listen(PORT, () => {
   console.log('  POST /api/rank - Rank ASINs');
   console.log('  POST /api/enrich - Enrich with PA-API');
   console.log('  POST /api/pipeline - Complete pipeline');
+  console.log('  POST /api/feed/sales-only - Get sales-only feed JSON');
+  console.log('  POST /api/feed/sales-only/download - Download sales-only feed');
   console.log('  GET  /api/health - Health check\n');
   console.log('Press Ctrl+C to stop\n');
 });

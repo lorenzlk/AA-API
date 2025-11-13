@@ -24,7 +24,8 @@ const DEFAULT_CONFIG = {
     'Images.Primary.Medium',
     'ItemInfo.Title',
     'Offers.Listings.Price',
-    'Offers.Listings.Availability',
+    'Offers.Listings.SavingBasis', // Original price when on sale
+    'Offers.Listings.Availability.Type', // Availability status
   ],
   retryAttempts: 3,
   retryDelayMs: 1000,
@@ -60,6 +61,20 @@ function extractProductData(item, associateTag) {
     currency = item.Offers.Listings[0].Price.Currency;
   }
   
+  // Extract sale information
+  let originalPrice = null;
+  let discountAmount = null;
+  let discountPercentage = null;
+  let isOnSale = false;
+  
+  const savingBasis = item.Offers?.Listings?.[0]?.SavingBasis;
+  if (savingBasis && savingBasis.Amount && price) {
+    originalPrice = savingBasis.Amount;
+    discountAmount = originalPrice - price;
+    discountPercentage = Math.round((discountAmount / originalPrice) * 100);
+    isOnSale = discountAmount > 0;
+  }
+  
   // Extract image URL
   const imageUrl = item.Images?.Primary?.Medium?.URL || null;
   
@@ -77,6 +92,13 @@ function extractProductData(item, associateTag) {
     image_url: imageUrl,
     link,
     availability,
+    // Sale information
+    ...(isOnSale && {
+      is_on_sale: true,
+      original_price: originalPrice,
+      discount_amount: discountAmount,
+      discount_percentage: discountPercentage,
+    }),
   };
 }
 
@@ -132,9 +154,28 @@ async function getItemsBatch(asins, config) {
       data: response.data,
     };
   } catch (error) {
+    // Extract error message properly
+    let errorMessage = 'Request failed';
+    if (error.response?.data) {
+      // PA-API error response structure
+      if (error.response.data.Errors && Array.isArray(error.response.data.Errors)) {
+        const firstError = error.response.data.Errors[0];
+        errorMessage = firstError.Message || firstError.message || firstError.Code || 'API error';
+      } else if (error.response.data.Message) {
+        errorMessage = error.response.data.Message;
+      } else if (typeof error.response.data === 'string') {
+        errorMessage = error.response.data;
+      } else {
+        errorMessage = JSON.stringify(error.response.data);
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     return {
       success: false,
-      error: error.response?.data || error.message,
+      error: errorMessage,
+      errorData: error.response?.data, // Keep full error data for debugging
       status: error.response?.status,
     };
   }
@@ -230,19 +271,46 @@ async function enrichAsins(asins, config = {}) {
         failed.push(error.ASIN);
         errors.push({
           asin: error.ASIN,
-          code: error.Code,
-          message: error.Message,
+          code: error.Code || 'UNKNOWN_ERROR',
+          message: error.Message || error.message || 'Item not accessible',
         });
       });
       
     } else {
       // Entire batch failed
+      // Ensure error message is always a string
+      let errorMessage = 'Batch request failed';
+      
+      if (typeof response.error === 'string') {
+        errorMessage = response.error;
+      } else if (response.error) {
+        // Handle various error object formats
+        if (response.error.Message) {
+          errorMessage = String(response.error.Message);
+        } else if (response.error.message) {
+          errorMessage = String(response.error.message);
+        } else if (response.error.error) {
+          errorMessage = String(response.error.error);
+        } else if (response.error.Code) {
+          errorMessage = `Error code: ${response.error.Code}`;
+        } else {
+          // Last resort: stringify the error
+          try {
+            errorMessage = JSON.stringify(response.error);
+          } catch {
+            errorMessage = `HTTP ${response.status || 'Unknown'} error`;
+          }
+        }
+      } else if (response.status) {
+        errorMessage = `HTTP ${response.status} error`;
+      }
+      
       batch.forEach(asin => {
         failed.push(asin);
         errors.push({
           asin,
           code: 'BATCH_FAILED',
-          message: response.error,
+          message: String(errorMessage), // Ensure it's a string
         });
       });
     }
