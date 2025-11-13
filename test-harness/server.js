@@ -20,7 +20,42 @@ const parser = require('../src/aa-csv-parser');
 const aggregator = require('../src/asin-aggregator');
 const paApi = require('../src/pa-api-client');
 const feedGen = require('../src/feed-generator');
-const config = require('../config');
+
+// Load config - use environment variables on Railway, fallback to config.js for local dev
+let config;
+try {
+  config = require('../config');
+} catch (error) {
+  // config.js doesn't exist (Railway deployment) - create config from env vars
+  console.log('⚠️  config.js not found, using environment variables');
+  config = {
+    paApi: {
+      accessKey: process.env.PA_API_ACCESS_KEY,
+      secretKey: process.env.PA_API_SECRET_KEY,
+      associateTag: process.env.PA_API_ASSOCIATE_TAG || 'mula0f-20',
+      region: process.env.PA_API_REGION || 'us-east-1',
+      marketplace: process.env.PA_API_MARKETPLACE || 'www.amazon.com',
+      endpoint: 'https://webservices.amazon.com/paapi5/getitems',
+      resources: [
+        'Images.Primary.Medium',
+        'ItemInfo.Title',
+        'Offers.Listings.Price',
+        'Offers.Listings.SavingBasis',
+        'Offers.Listings.Availability.Type',
+      ],
+      batchSize: 10,
+      retryAttempts: 3,
+      retryDelayMs: 1000,
+      requestDelayMs: 1100,
+    },
+  };
+  
+  // Validate required env vars
+  if (!config.paApi.accessKey || !config.paApi.secretKey) {
+    console.error('❌ Missing required environment variables: PA_API_ACCESS_KEY and PA_API_SECRET_KEY');
+    process.exit(1);
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
